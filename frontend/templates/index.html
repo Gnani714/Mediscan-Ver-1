@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MediScan AI — Medical Report Analysis</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="app-wrapper">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="ai-badge"><div class="dot"></div>AI-Powered</div>
+    <h1>Medi<em>Scan</em> AI</h1>
+    <p class="tagline">
+      Upload your medical report and get a plain-English health score, parameter analysis,
+      and personalized recommendations — instantly.
+    </p>
+  </header>
+
+  <!-- ── Input Card ─────────────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-label">Report Input</div>
+
+    <!-- Patient details -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="patient-age">Patient Age</label>
+        <input type="number" id="patient-age" placeholder="e.g. 35" min="1" max="120" value="35"/>
+      </div>
+      <div class="form-group">
+        <label for="patient-gender">Gender</label>
+        <select id="patient-gender">
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Upload zone -->
+    <div class="upload-zone" id="upload-zone">
+      <div class="upload-icon">📄</div>
+      <strong>Drop your PDF or TXT report here</strong>
+      <p>Supports CBC, Blood Sugar, Lipid Panel, Thyroid, Liver &amp; Kidney reports</p>
+      <input type="file" id="file-input" accept=".pdf,.txt" style="display:none"/>
+    </div>
+    <div class="file-label" id="file-label"></div>
+
+    <div class="divider">or paste report text directly</div>
+
+    <textarea id="report-text" placeholder="Paste your medical report here…
+
+Example:
+CBC Report
+Hemoglobin: 10.2 g/dL
+WBC Count: 11,500 /µL
+Platelet Count: 145,000 /µL
+
+Lipid Panel
+Total Cholesterol: 218 mg/dL
+LDL: 148 mg/dL
+HDL: 38 mg/dL
+Triglycerides: 195 mg/dL
+
+Blood Sugar (Fasting): 115 mg/dL
+HbA1c: 6.1%"></textarea>
+
+    <div class="error-msg" id="error-msg" role="alert"></div>
+
+    <div style="margin-top:1.1rem;display:flex;gap:10px;">
+      <button class="btn btn-primary" id="analyze-btn">
+        <span>Analyze Report</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Results ────────────────────────────────────────────────────────── -->
+  <section id="results" aria-live="polite"></section>
+
+</div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
