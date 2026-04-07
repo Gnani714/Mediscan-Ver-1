@@ -7,6 +7,7 @@ import docx
 from werkzeug.utils import secure_filename
 from ai_engine import analyze_with_ai
 from report_generator import generate_pdf_report
+from run import run
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -211,3 +212,6 @@ if __name__ == '__main__':
     os.makedirs('reports', exist_ok=True)
 
     app.run(debug=True)
+
+if __name__ == "__main__":
+    app.run()
