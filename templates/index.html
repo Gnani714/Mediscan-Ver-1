@@ -1,0 +1,1251 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MediScan AI — Intelligent Medical Report Analysis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ── Reset & Variables ─────────────────────────────────────────── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #050d1a;
+        --surface: #0c1829;
+        --card: #0f1e33;
+        --border: #1a2e4a;
+        --blue: #2d8cf0;
+        --blue-dim: #1a4f8a;
+        --teal: #0abfbc;
+        --green: #22c55e;
+        --amber: #f59e0b;
+        --red: #ef4444;
+        --text: #e2eeff;
+        --muted: #8ba4c2;
+        --font-body: "DM Sans", sans-serif;
+        --font-head: "DM Serif Display", serif;
+        --font-mono: "JetBrains Mono", monospace;
+        --radius: 12px;
+        --glow-blue: 0 0 30px rgba(45, 140, 240, 0.18);
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family: var(--font-body);
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        line-height: 1.6;
+        overflow-x: hidden;
+      }
+
+      /* ── Animated grid background ──────────────────────────────────── */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(45, 140, 240, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(45, 140, 240, 0.04) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      /* ── Nav ────────────────────────────────────────────────────────── */
+      nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 2rem;
+        height: 64px;
+        background: rgba(5, 13, 26, 0.85);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--border);
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--font-head);
+        font-size: 1.4rem;
+        color: var(--text);
+      }
+      .logo-icon {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, var(--blue), var(--teal));
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+      }
+      .nav-badge {
+        font-family: var(--font-mono);
+        font-size: 0.68rem;
+        background: rgba(45, 140, 240, 0.15);
+        color: var(--blue);
+        border: 1px solid var(--blue-dim);
+        border-radius: 20px;
+        padding: 3px 10px;
+      }
+
+      /* ── Layout ─────────────────────────────────────────────────────── */
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+        position: relative;
+        z-index: 1;
+      }
+
+      /* ── Hero ───────────────────────────────────────────────────────── */
+      .hero {
+        text-align: center;
+        padding: 5rem 1rem 3rem;
+      }
+      .hero-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.78rem;
+        font-family: var(--font-mono);
+        color: var(--teal);
+        border: 1px solid rgba(10, 191, 188, 0.3);
+        background: rgba(10, 191, 188, 0.08);
+        border-radius: 20px;
+        padding: 4px 14px;
+        margin-bottom: 1.5rem;
+      }
+      .hero h1 {
+        font-family: var(--font-head);
+        font-size: clamp(2.2rem, 5vw, 3.5rem);
+        line-height: 1.15;
+        margin-bottom: 1rem;
+        background: linear-gradient(
+          135deg,
+          #e2eeff 0%,
+          var(--blue) 60%,
+          var(--teal) 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .hero p {
+        color: var(--muted);
+        font-size: 1.05rem;
+        max-width: 580px;
+        margin: 0 auto 2rem;
+      }
+
+      /* ── Stat pills ─────────────────────────────────────────────────── */
+      .stats {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 3rem;
+      }
+      .stat-pill {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 30px;
+        padding: 8px 18px;
+        font-size: 0.82rem;
+        color: var(--muted);
+      }
+      .stat-pill .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+      }
+
+      /* ── Form Card ──────────────────────────────────────────────────── */
+      .form-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 2.5rem;
+        box-shadow: var(--glow-blue);
+        margin-bottom: 2rem;
+      }
+      .section-label {
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--blue);
+        font-family: var(--font-mono);
+        margin-bottom: 1.2rem;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+      @media (max-width: 600px) {
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .field label {
+        display: block;
+        font-size: 0.78rem;
+        color: var(--muted);
+        margin-bottom: 6px;
+        font-weight: 500;
+      }
+      .field input,
+      .field select {
+        width: 100%;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 0.9rem;
+        color: var(--text);
+        font-family: var(--font-body);
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
+        outline: none;
+      }
+      .field input:focus,
+      .field select:focus {
+        border-color: var(--blue);
+        box-shadow: 0 0 0 3px rgba(45, 140, 240, 0.15);
+      }
+      .field select option {
+        background: var(--surface);
+      }
+
+      /* ── Divider ────────────────────────────────────────────────────── */
+      .or-divider {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        color: var(--muted);
+        font-size: 0.8rem;
+        margin: 1.5rem 0;
+      }
+      .or-divider::before,
+      .or-divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+
+      /* ── Drop Zone ──────────────────────────────────────────────────── */
+      .drop-zone {
+        border: 2px dashed var(--border);
+        border-radius: 12px;
+        padding: 2.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.25s;
+        position: relative;
+      }
+      .drop-zone:hover,
+      .drop-zone.drag-over {
+        border-color: var(--blue);
+        background: rgba(45, 140, 240, 0.05);
+      }
+      .drop-zone input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+        width: 100%;
+        height: 100%;
+      }
+      .drop-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+      }
+      .drop-zone p {
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      .drop-zone strong {
+        color: var(--blue);
+      }
+
+      /* ── Text Area ──────────────────────────────────────────────────── */
+      textarea {
+        width: 100%;
+        min-height: 180px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px;
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        color: var(--text);
+        resize: vertical;
+        transition: border-color 0.2s;
+        outline: none;
+        line-height: 1.6;
+      }
+      textarea:focus {
+        border-color: var(--blue);
+        box-shadow: 0 0 0 3px rgba(45, 140, 240, 0.12);
+      }
+
+      /* ── Buttons ────────────────────────────────────────────────────── */
+      .btn-row {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        flex-wrap: wrap;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 24px;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s;
+        font-family: var(--font-body);
+        text-decoration: none;
+      }
+      .btn-primary {
+        background: linear-gradient(135deg, var(--blue), var(--teal));
+        color: #fff;
+        box-shadow: 0 4px 15px rgba(45, 140, 240, 0.3);
+      }
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(45, 140, 240, 0.4);
+      }
+      .btn-secondary {
+        background: var(--surface);
+        color: var(--muted);
+        border: 1px solid var(--border);
+      }
+      .btn-secondary:hover {
+        border-color: var(--blue);
+        color: var(--blue);
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+      }
+
+      /* ── Loading ─────────────────────────────────────────────────────── */
+      .loading-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 999;
+        background: rgba(5, 13, 26, 0.92);
+        backdrop-filter: blur(8px);
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+      .loading-overlay.active {
+        display: flex;
+      }
+      .pulse-ring {
+        width: 80px;
+        height: 80px;
+        border: 3px solid transparent;
+        border-top-color: var(--blue);
+        border-right-color: var(--teal);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .loading-text {
+        font-family: var(--font-mono);
+        color: var(--blue);
+        font-size: 0.9rem;
+      }
+
+      /* ── Results ─────────────────────────────────────────────────────── */
+      #results {
+        display: none;
+      }
+      #results.visible {
+        display: block;
+        animation: fadeUp 0.4s ease;
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+      .results-title {
+        font-family: var(--font-head);
+        font-size: 1.6rem;
+      }
+
+      /* ── Risk badge ─────────────────────────────────────────────────── */
+      .risk-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 22px;
+        border-radius: 50px;
+        font-weight: 700;
+        font-size: 1rem;
+      }
+      .risk-normal {
+        background: rgba(34, 197, 94, 0.15);
+        color: var(--green);
+        border: 1.5px solid var(--green);
+      }
+      .risk-attention {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--amber);
+        border: 1.5px solid var(--amber);
+      }
+      .risk-critical {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--red);
+        border: 1.5px solid var(--red);
+      }
+
+      /* ── Summary card ───────────────────────────────────────────────── */
+      .summary-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+      }
+      .summary-card h3 {
+        font-family: var(--font-head);
+        font-size: 1.1rem;
+        margin-bottom: 0.6rem;
+        color: var(--blue);
+      }
+
+      /* ── Score ring ─────────────────────────────────────────────────── */
+      .score-row {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+      }
+      .score-ring-wrap {
+        position: relative;
+        width: 90px;
+        height: 90px;
+        flex-shrink: 0;
+      }
+      .score-ring-wrap svg {
+        transform: rotate(-90deg);
+      }
+      .score-value {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-mono);
+        font-size: 1.3rem;
+        font-weight: 700;
+      }
+
+      /* ── Alerts ─────────────────────────────────────────────────────── */
+      .alert-box {
+        background: rgba(239, 68, 68, 0.08);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        border-radius: var(--radius);
+        padding: 1rem 1.2rem;
+        margin-bottom: 1.5rem;
+      }
+      .alert-box h3 {
+        color: var(--red);
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+      }
+      .alert-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: 0.88rem;
+        color: #fca5a5;
+        padding: 3px 0;
+      }
+
+      /* ── Parameters table ───────────────────────────────────────────── */
+      .table-wrap {
+        overflow-x: auto;
+        margin-bottom: 1.5rem;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+      }
+      thead tr {
+        background: var(--surface);
+      }
+      th {
+        padding: 10px 14px;
+        text-align: left;
+        font-size: 0.72rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-family: var(--font-mono);
+        border-bottom: 1px solid var(--border);
+      }
+      td {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      tr:hover td {
+        background: rgba(45, 140, 240, 0.04);
+      }
+
+      .status-badge {
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 2px 9px;
+        border-radius: 20px;
+        font-family: var(--font-mono);
+      }
+      .status-normal {
+        background: rgba(34, 197, 94, 0.15);
+        color: var(--green);
+      }
+      .status-low {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--amber);
+      }
+      .status-high {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--amber);
+      }
+      .status-critical {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--red);
+      }
+
+      /* ── Conditions ─────────────────────────────────────────────────── */
+      .conditions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+      .condition-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1rem;
+      }
+      .condition-name {
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .condition-evidence {
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+      .conf-high {
+        color: var(--red);
+      }
+      .conf-moderate {
+        color: var(--amber);
+      }
+      .conf-low {
+        color: var(--green);
+      }
+
+      /* ── Recommendations ────────────────────────────────────────────── */
+      .rec-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.7rem;
+        margin-bottom: 1.5rem;
+      }
+      .rec-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0.9rem 1rem;
+      }
+      .rec-priority {
+        font-size: 0.68rem;
+        font-weight: 700;
+        font-family: var(--font-mono);
+        padding: 3px 8px;
+        border-radius: 4px;
+        flex-shrink: 0;
+        text-transform: uppercase;
+        margin-top: 2px;
+      }
+      .pri-urgent {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--red);
+      }
+      .pri-high {
+        background: rgba(245, 158, 11, 0.2);
+        color: var(--amber);
+      }
+      .pri-medium {
+        background: rgba(10, 191, 188, 0.2);
+        color: var(--teal);
+      }
+      .pri-low {
+        background: rgba(34, 197, 94, 0.15);
+        color: var(--green);
+      }
+      .rec-text {
+        font-size: 0.88rem;
+        color: var(--text);
+      }
+
+      /* ── Lifestyle pills ────────────────────────────────────────────── */
+      .lifestyle-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin-bottom: 1.5rem;
+      }
+      .lifestyle-pill {
+        background: rgba(45, 140, 240, 0.08);
+        border: 1px solid rgba(45, 140, 240, 0.2);
+        border-radius: 20px;
+        padding: 6px 14px;
+        font-size: 0.82rem;
+        color: var(--text);
+      }
+
+      /* ── Provider badge ─────────────────────────────────────────────── */
+      .provider-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.75rem;
+        font-family: var(--font-mono);
+        color: var(--teal);
+        border: 1px solid rgba(10, 191, 188, 0.3);
+        background: rgba(10, 191, 188, 0.08);
+        border-radius: 20px;
+        padding: 4px 12px;
+      }
+
+      /* ── Disclaimer ─────────────────────────────────────────────────── */
+      .disclaimer {
+        background: rgba(245, 158, 11, 0.07);
+        border: 1px solid rgba(245, 158, 11, 0.25);
+        border-radius: var(--radius);
+        padding: 1rem 1.2rem;
+        font-size: 0.8rem;
+        color: var(--muted);
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        margin-top: 1.5rem;
+      }
+
+      /* ── File chip ──────────────────────────────────────────────────── */
+      .file-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(45, 140, 240, 0.12);
+        border: 1px solid rgba(45, 140, 240, 0.3);
+        border-radius: 20px;
+        padding: 4px 14px;
+        font-size: 0.8rem;
+        color: var(--blue);
+        margin-top: 8px;
+        cursor: pointer;
+      }
+      .file-chip .remove {
+        cursor: pointer;
+        color: var(--muted);
+        margin-left: 4px;
+      }
+      .file-chip .remove:hover {
+        color: var(--red);
+      }
+
+      /* ── Section heading helper ─────────────────────────────────────── */
+      .section-head {
+        font-family: var(--font-head);
+        font-size: 1.15rem;
+        color: var(--blue);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .section-head::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Nav -->
+    <nav>
+      <div class="logo">
+        <div class="logo-icon">🏥</div>
+        MediScan AI
+      </div>
+      <span class="nav-badge">v2.0 · Multi-AI Engine</span>
+    </nav>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="pulse-ring"></div>
+      <div class="loading-text" id="loadingText">Analyzing medical report…</div>
+    </div>
+
+    <div class="container">
+      <!-- Hero -->
+      <div class="hero">
+        <div class="hero-tag">
+          <span>⚡</span> Powered by Groq + HuggingFace + Rule Engine
+        </div>
+        <h1>Intelligent Medical<br />Report Analysis</h1>
+        <p>
+          Upload any medical report and get instant AI-powered health insights,
+          risk classification, and personalised recommendations.
+        </p>
+        <div class="stats">
+          <div class="stat-pill">
+            <span class="dot" style="background: var(--green)"></span>Groq
+            (Llama 3) — Primary AI
+          </div>
+          <div class="stat-pill">
+            <span class="dot" style="background: var(--blue)"></span>HuggingFace
+            — Fallback AI
+          </div>
+          <div class="stat-pill">
+            <span class="dot" style="background: var(--teal)"></span>Rule Engine
+            — Final Fallback
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Card -->
+      <div class="form-card">
+        <div class="section-label">Upload Report File</div>
+        <div class="drop-zone" id="dropZone">
+          <input
+            type="file"
+            id="fileInput"
+            accept=".pdf,.txt,.docx,.png,.jpg,.jpeg"
+          />
+          <div class="drop-icon">📂</div>
+          <p><strong>Click to upload</strong> or drag & drop</p>
+          <p style="margin-top: 4px; font-size: 0.78rem">
+            PDF · TXT · DOCX · PNG · JPG — max 16 MB
+          </p>
+        </div>
+        <div id="fileChip" style="display: none"></div>
+
+        <div class="or-divider">or paste report text</div>
+
+        <div class="section-label">Paste Report Text</div>
+        <textarea
+          id="reportText"
+          placeholder="Paste your medical report content here (blood test results, CBC, lipid profile, etc.)…"
+        ></textarea>
+
+        <div class="btn-row">
+          <button
+            class="btn btn-primary"
+            id="analyzeBtn"
+            onclick="analyzeReport()"
+          >
+            🔬 Analyze Report
+          </button>
+          <button class="btn btn-secondary" onclick="loadSample()">
+            📋 Load Sample
+          </button>
+          <button class="btn btn-secondary" onclick="clearForm()">
+            ✕ Clear
+          </button>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="results">
+        <!-- Header row -->
+        <div class="results-header">
+          <div class="results-title">Analysis Report</div>
+          <div
+            style="
+              display: flex;
+              gap: 0.8rem;
+              align-items: center;
+              flex-wrap: wrap;
+            "
+          >
+            <span class="provider-badge" id="providerBadge"
+              >⚡ AI Provider</span
+            >
+            <span id="riskBadge" class="risk-badge">— Risk Level</span>
+            <button
+              class="btn btn-secondary"
+              id="downloadBtn"
+              onclick="downloadReport()"
+              style="display: none"
+            >
+              ⬇ Download PDF
+            </button>
+          </div>
+        </div>
+
+        <!-- Summary + Score -->
+        <div class="summary-card">
+          <h3>Executive Summary</h3>
+          <div
+            id="patientInfo"
+            style="margin-bottom: 10px; font-size: 0.9rem; color: var(--text)"
+          ></div>
+          <div class="score-row">
+            <div class="score-ring-wrap">
+              <svg width="90" height="90" viewBox="0 0 90 90">
+                <circle
+                  cx="45"
+                  cy="45"
+                  r="38"
+                  fill="none"
+                  stroke="#1A2E4A"
+                  stroke-width="8"
+                />
+                <circle
+                  id="scoreArc"
+                  cx="45"
+                  cy="45"
+                  r="38"
+                  fill="none"
+                  stroke="var(--blue)"
+                  stroke-width="8"
+                  stroke-dasharray="238.76"
+                  stroke-dashoffset="238.76"
+                  stroke-linecap="round"
+                  style="transition: stroke-dashoffset 1s ease"
+                />
+              </svg>
+              <div class="score-value" id="scoreValue">0</div>
+            </div>
+            <p
+              id="summaryText"
+              style="color: var(--muted); font-size: 0.92rem; flex: 1"
+            ></p>
+          </div>
+        </div>
+
+        <!-- Alerts -->
+        <div id="alertsSection" style="display: none" class="alert-box">
+          <h3>⚠ Critical Alerts</h3>
+          <div id="alertsList"></div>
+        </div>
+
+        <!-- Parameters -->
+        <div id="paramsSection" style="display: none">
+          <div class="section-head">🧪 Parameter Analysis</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Parameter</th>
+                  <th>Value</th>
+                  <th>Normal Range</th>
+                  <th>Status</th>
+                  <th>Interpretation</th>
+                </tr>
+              </thead>
+              <tbody id="paramsTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Conditions -->
+        <div id="conditionsSection" style="display: none">
+          <div class="section-head">🩺 Conditions Identified</div>
+          <div class="conditions-grid" id="conditionsGrid"></div>
+        </div>
+
+        <!-- Recommendations -->
+        <div id="recsSection" style="display: none">
+          <div class="section-head">💊 Recommendations</div>
+          <div class="rec-list" id="recsList"></div>
+        </div>
+
+        <!-- Lifestyle -->
+        <div id="lifestyleSection" style="display: none">
+          <div class="section-head">🌿 Lifestyle Advice</div>
+          <div class="lifestyle-grid" id="lifestyleGrid"></div>
+        </div>
+
+        <!-- Follow-up -->
+        <div id="followupSection" style="display: none">
+          <div class="section-head">📅 Follow-Up Plan</div>
+          <div class="summary-card" id="followupText"></div>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="disclaimer" id="disclaimerBox" style="display: none">
+          <span>⚕</span>
+          <span id="disclaimerText"></span>
+        </div>
+
+        <!-- New analysis button -->
+        <div style="text-align: center; margin: 2rem 0">
+          <button class="btn btn-secondary" onclick="newAnalysis()">
+            ← Start New Analysis
+          </button>
+        </div>
+      </div>
+      <!-- /results -->
+    </div>
+    <!-- /container -->
+
+    <script>
+      let currentReportFile = null;
+
+      // ── File Upload ─────────────────────────────────────────────────────────────
+      const dropZone = document.getElementById("dropZone");
+      const fileInput = document.getElementById("fileInput");
+
+      dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("drag-over");
+      });
+      dropZone.addEventListener("dragleave", () =>
+        dropZone.classList.remove("drag-over"),
+      );
+      dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("drag-over");
+        if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+      });
+      fileInput.addEventListener("change", () => {
+        if (fileInput.files[0]) handleFile(fileInput.files[0]);
+      });
+
+      function handleFile(file) {
+        currentReportFile = file;
+        const chip = document.getElementById("fileChip");
+        chip.style.display = "block";
+        chip.innerHTML = `<span class="file-chip">📄 ${file.name} <span class="remove" onclick="removeFile()">✕</span></span>`;
+      }
+      function removeFile() {
+        currentReportFile = null;
+        fileInput.value = "";
+        document.getElementById("fileChip").style.display = "none";
+      }
+
+      // ── Sample ──────────────────────────────────────────────────────────────────
+      async function loadSample() {
+        const btn = event.target;
+        btn.disabled = true;
+        btn.textContent = "Loading…";
+        try {
+          const res = await fetch("/sample");
+          const data = await res.json();
+          document.getElementById("reportText").value = data.sample;
+        } catch (e) {
+          alert("Could not load sample.");
+        }
+        btn.disabled = false;
+        btn.textContent = "📋 Load Sample";
+      }
+
+      function clearForm() {
+        document.getElementById("reportText").value = "";
+        removeFile();
+
+        document.getElementById("results").classList.remove("visible");
+        document.getElementById("results").style.display = "none";
+      }
+
+      // ── Analyze ─────────────────────────────────────────────────────────────────
+      const loadingMessages = [
+        "Extracting medical parameters…",
+        "Consulting AI diagnostic engine…",
+        "Evaluating health risks…",
+        "Generating clinical recommendations…",
+        "Compiling your report…",
+      ];
+      let loadingInterval;
+
+      async function analyzeReport() {
+        const text = document.getElementById("reportText").value.trim();
+        if (!currentReportFile && !text) {
+          alert("Please upload a file or paste report text.");
+          return;
+        }
+
+        const overlay = document.getElementById("loadingOverlay");
+        const loadText = document.getElementById("loadingText");
+        overlay.classList.add("active");
+        let i = 0;
+        loadingInterval = setInterval(() => {
+          loadText.textContent = loadingMessages[i % loadingMessages.length];
+          i++;
+        }, 1800);
+
+        const fd = new FormData();
+
+        if (currentReportFile) fd.append("file", currentReportFile);
+        if (text) fd.append("report_text", text);
+
+        try {
+          const res = await fetch("/analyze", { method: "POST", body: fd });
+          const data = await res.json();
+          if (data.error) {
+            alert("Error: " + data.error);
+            return;
+          }
+          renderResults(data);
+        } catch (e) {
+          alert("Network error. Please check the server is running.");
+        } finally {
+          clearInterval(loadingInterval);
+          overlay.classList.remove("active");
+        }
+      }
+
+      // ── Render Results ───────────────────────────────────────────────────────────
+      function renderResults(data) {
+        // Risk badge
+        const rl = data.risk_level || "Unknown";
+        const rb = document.getElementById("riskBadge");
+        rb.textContent = rl;
+        rb.className = "risk-badge";
+        if (rl === "Normal") rb.classList.add("risk-normal");
+        else if (rl === "Critical") rb.classList.add("risk-critical");
+        else rb.classList.add("risk-attention");
+
+        // Provider
+        document.getElementById("providerBadge").textContent =
+          "⚡ " + (data.ai_provider || "AI Engine");
+
+        // Score ring
+        const score = data.risk_score || 0;
+        document.getElementById("scoreValue").textContent = score;
+        const arc = document.getElementById("scoreArc");
+        const circumference = 238.76;
+        const offset = circumference - (score / 100) * circumference;
+        setTimeout(() => (arc.style.strokeDashoffset = offset), 100);
+        arc.style.stroke =
+          score >= 60
+            ? "var(--red)"
+            : score >= 30
+              ? "var(--amber)"
+              : "var(--green)";
+
+        console.log("DATA FROM BACKEND:", data);
+        // ✅ Show patient info
+        document.getElementById("patientInfo").innerHTML =
+          `<b>👤 Name:</b> ${data.patient_name || "N/A"} |
+   <b>🎂 Age:</b> ${data.patient_age || "N/A"} |
+   <b>⚧ Gender:</b> ${data.patient_gender || "N/A"}`;
+
+        // Summary
+        document.getElementById("summaryText").textContent = data.summary || "";
+
+        // Alerts
+        const alerts = data.critical_alerts || [];
+        const alertSec = document.getElementById("alertsSection");
+        if (alerts.length) {
+          alertSec.style.display = "block";
+          document.getElementById("alertsList").innerHTML = alerts
+            .map((a) => `<div class="alert-item">⚡ ${a}</div>`)
+            .join("");
+        } else {
+          alertSec.style.display = "none";
+        }
+
+        // Parameters
+        const params = data.parameters || [];
+        const paramSec = document.getElementById("paramsSection");
+        if (params.length) {
+          paramSec.style.display = "block";
+          document.getElementById("paramsTable").innerHTML = params
+            .map((p) => {
+              const s = p.status || "Normal";
+              const cls = s.toLowerCase().includes("critical")
+                ? "status-critical"
+                : s === "Normal"
+                  ? "status-normal"
+                  : s === "High" || s === "Low"
+                    ? `status-${s.toLowerCase()}`
+                    : "status-normal";
+              return `<tr>
+        <td style="font-weight:600">${p.name || ""}</td>
+        <td style="font-family:var(--font-mono)">${p.value || ""}</td>
+        <td style="color:var(--muted);font-size:.8rem">${p.normal_range || ""}</td>
+        <td><span class="status-badge ${cls}">${s}</span></td>
+        <td style="color:var(--muted);font-size:.82rem">${p.interpretation || ""}</td>
+      </tr>`;
+            })
+            .join("");
+        } else {
+          paramSec.style.display = "none";
+        }
+
+        // Conditions
+        const conds = data.conditions_identified || [];
+        const condSec = document.getElementById("conditionsSection");
+        if (conds.length) {
+          condSec.style.display = "block";
+          document.getElementById("conditionsGrid").innerHTML = conds
+            .map((c) => {
+              const confCls =
+                c.confidence === "High"
+                  ? "conf-high"
+                  : c.confidence === "Moderate"
+                    ? "conf-moderate"
+                    : "conf-low";
+              return `<div class="condition-card">
+        <div class="condition-name">${c.condition || ""}</div>
+        <div class="status-badge status-${c.confidence?.toLowerCase() || "low"} ${confCls}" style="margin:6px 0;font-size:.7rem">${c.confidence || ""} Confidence</div>
+        <div class="condition-evidence">${c.evidence || ""}</div>
+      </div>`;
+            })
+            .join("");
+        } else {
+          condSec.style.display = "none";
+        }
+
+        // Recommendations
+        const recs = data.recommendations || [];
+        const recSec = document.getElementById("recsSection");
+        if (recs.length) {
+          recSec.style.display = "block";
+          const order = { Urgent: 0, High: 1, Medium: 2, Low: 3 };
+          recs.sort(
+            (a, b) => (order[a.priority] || 4) - (order[b.priority] || 4),
+          );
+          document.getElementById("recsList").innerHTML = recs
+            .map((r) => {
+              const cls = `pri-${(r.priority || "low").toLowerCase()}`;
+              return `<div class="rec-item">
+        <span class="rec-priority ${cls}">${r.priority || "Low"}</span>
+        <span class="rec-text">${r.action || ""}</span>
+      </div>`;
+            })
+            .join("");
+        } else {
+          recSec.style.display = "none";
+        }
+
+        // Lifestyle
+        const life = data.lifestyle_advice || [];
+        const lifeSec = document.getElementById("lifestyleSection");
+        if (life.length) {
+          lifeSec.style.display = "block";
+          document.getElementById("lifestyleGrid").innerHTML = life
+            .map((l) => `<span class="lifestyle-pill">✔ ${l}</span>`)
+            .join("");
+        } else {
+          lifeSec.style.display = "none";
+        }
+
+        // Follow-up
+        const fu = data.followup || "";
+        const fuSec = document.getElementById("followupSection");
+        if (fu) {
+          fuSec.style.display = "block";
+          document.getElementById("followupText").innerHTML =
+            `<p style="color:var(--muted);font-size:.9rem">${fu}</p>`;
+        } else {
+          fuSec.style.display = "none";
+        }
+
+        // Disclaimer
+        const disc = data.disclaimer || "";
+        const discBox = document.getElementById("disclaimerBox");
+        if (disc) {
+          discBox.style.display = "flex";
+          document.getElementById("disclaimerText").textContent = disc;
+        }
+
+        // Download button
+        const dlBtn = document.getElementById("downloadBtn");
+        if (data.report_file) {
+          dlBtn.style.display = "inline-flex";
+          dlBtn.dataset.file = data.report_file;
+        } else {
+          dlBtn.style.display = "none";
+        }
+
+        // Show results
+        const res = document.getElementById("results");
+        res.style.display = "block";
+        setTimeout(() => {
+          res.classList.add("visible");
+          res.scrollIntoView({ behavior: "smooth" });
+        }, 50);
+      }
+
+      function downloadReport() {
+        const file = document.getElementById("downloadBtn").dataset.file;
+        if (file) window.open("/download/" + file);
+      }
+
+      function newAnalysis() {
+        clearForm();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    </script>
+  </body>
+</html>

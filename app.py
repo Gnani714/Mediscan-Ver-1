@@ -1,89 +1,213 @@
-# app.py  —  MediScan AI  (Groq edition)
-#
-# Changed from HF version:
-#   os.getenv("HF_TOKEN")      →  os.getenv("GROQ_API_KEY")
-#   error message              →  mentions Groq instead of HF
-
 import os
-import uuid
-from flask import Flask, request, jsonify, render_template
-from flask_cors import CORS
+import re
+from datetime import datetime
+from flask import Flask, render_template, request, jsonify, send_file
+import pdfplumber
+import docx
 from werkzeug.utils import secure_filename
-from dotenv import load_dotenv
+from ai_engine import analyze_with_ai
+from report_generator import generate_pdf_report
 
-from backend.pdf_extractor import extract_text
-from backend.analyzer import analyze_report
+app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['REPORTS_FOLDER'] = 'reports'
 
-load_dotenv()
+ALLOWED_EXTENSIONS = {'pdf', 'txt', 'docx', 'png', 'jpg', 'jpeg'}
 
-app = Flask(
-    __name__,
-    template_folder="frontend/templates",
-    static_folder="frontend/static",
-)
-CORS(app)
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-UPLOAD_FOLDER  = "uploads"
-ALLOWED_EXTS   = {"pdf", "txt"}
-MAX_CONTENT_MB = 16
+def extract_text_from_file(filepath, filename):
+    ext = filename.rsplit('.', 1)[1].lower()
+    text = ""
+    try:
+        if ext == 'pdf':
+            with pdfplumber.open(filepath) as pdf:
+                for page in pdf.pages:
+                    t = page.extract_text()
+                    if t:
+                        text += t + "\n"
+        elif ext == 'docx':
+            doc = docx.Document(filepath)
+            for para in doc.paragraphs:
+                text += para.text + "\n"
 
-app.config["UPLOAD_FOLDER"]      = UPLOAD_FOLDER
-app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_MB * 1024 * 1024
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+        elif ext == 'txt':
+            with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+                text = f.read()
+
+        else:
+            text = f"[File uploaded: {filename}]"
+    except Exception as e:
+        text = f"Error: {str(e)}"
+
+    return text.strip()
 
 
-def _allowed(filename: str) -> bool:
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTS
+
+def extract_patient_info(text):
+    name = "Unknown"
+    age = "Unknown"
+    gender = "Unknown"
+
+    # Normalize text
+    text = text.replace("\n", " ").strip()
+
+    # ✅ 1. Patient Name label
+    name_match = re.search(
+        r'Patient Name\s*[:\-]?\s*([A-Za-z .]+)',
+        text,
+        re.IGNORECASE
+    )
+    if name_match:
+        name = name_match.group(1).strip()
+
+    # ✅ 2. Title-based name (Mr., Ms., etc.)
+    if name == "Unknown":
+        title_match = re.search(
+            r'(Mr\.?|Mrs\.?|Ms\.?)\s+([A-Za-z .]+)',
+            text
+        )
+        if title_match:
+            name = title_match.group(2).strip()
+
+    # ✅ 3. First line name fallback (like Yash M. Patel)
+    if name == "Unknown":
+        lines = text.split(" ")
+        possible_name = " ".join(lines[:3])  # first 2-3 words
+        if re.match(r'[A-Za-z]+\s+[A-Za-z]+', possible_name):
+            name = possible_name.strip()
+
+    # ✅ 4. Age extraction
+    age_match = re.search(
+        r'Age\s*[:/\-]?\s*(\d{1,3})',
+        text,
+        re.IGNORECASE
+    )
+    if age_match:
+        age = age_match.group(1)
+
+    # ✅ 5. Gender / Sex extraction
+    gender_match = re.search(
+        r'(?:Sex|Gender)\s*[:/\-]?\s*(Male|Female|M|F)',
+        text,
+        re.IGNORECASE
+    )
+    if gender_match:
+        g = gender_match.group(1).upper()
+        gender = "Male" if g in ["M", "MALE"] else "Female"
+
+    return name, age, gender
 
 
-@app.route("/")
+
+
+
+@app.route('/')
 def index():
-    return render_template("index.html")
+    return render_template('index.html')
 
-
-@app.route("/api/analyze", methods=["POST"])
+@app.route('/analyze', methods=['POST'])
 def analyze():
-    groq_key = os.getenv("GROQ_API_KEY", "")
-    if not groq_key or groq_key == "your-groq-api-key-here":
-        return jsonify({
-            "error": (
-                "Groq API key not configured. "
-                "Please set GROQ_API_KEY in your .env file. "
-                "Get a FREE key at https://console.groq.com/keys"
-            )
-        }), 500
+    report_text = ""
+    filename = "Manual Input"
 
-    age    = request.form.get("age",    35,     type=int)
-    gender = request.form.get("gender", "male").lower()
-    text   = request.form.get("text",   "").strip()
+    if 'file' in request.files and request.files['file'].filename:
+        file = request.files['file']
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+            report_text = extract_text_from_file(filepath, filename)
 
-    file = request.files.get("file")
-    if file and file.filename and _allowed(file.filename):
-        filename  = secure_filename(f"{uuid.uuid4()}_{file.filename}")
-        save_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-        file.save(save_path)
-        try:
-            text = extract_text(save_path)
-        finally:
-            os.remove(save_path)
+    if not report_text and 'report_text' in request.form:
+        report_text = request.form['report_text'].strip()
 
-    if not text:
-        return jsonify({"error": "No report text found. Please paste text or upload a file."}), 400
+    if not report_text:
+        return jsonify({'error': 'No medical report content provided'}), 400
+
+    patient_name, patient_age, patient_gender = extract_patient_info(report_text)
+
+    result = analyze_with_ai(report_text, patient_name, patient_age, patient_gender)
+
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    report_filename = f"mediscan_report_{timestamp}.pdf"
+    report_path = os.path.join(app.config['REPORTS_FOLDER'], report_filename)
 
     try:
-        result = analyze_report(text, age, gender, groq_key)
-        return jsonify({"success": True, "result": result})
+        generate_pdf_report(result, patient_name, patient_age, patient_gender, report_path, filename)
+        result['report_file'] = report_filename
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        result['report_file'] = None
+        result['pdf_error'] = str(e)
+
+    result['patient_name'] = patient_name
+    result['patient_age'] = patient_age
+    result['patient_gender'] = patient_gender
+
+    return jsonify(result)
 
 
-@app.route("/api/health")
-def health():
-    return jsonify({"status": "ok", "service": "MediScan AI (Groq)"})
+@app.route('/download/<filename>')
+def download_report(filename):
+    path = os.path.join(app.config['REPORTS_FOLDER'], filename)
+    if os.path.exists(path):
+        return send_file(path, as_attachment=True)
+    return jsonify({'error': 'File not found'}), 404
+
+@app.route('/sample')
+def get_sample():
+    sample = """
+PATIENT MEDICAL REPORT
+Date: 2026-04-07
+Patient: Rahul Sharma | Age: 28 | Gender: Male
+
+COMPLETE BLOOD COUNT (CBC)
+Hemoglobin: 15.2 g/dL
+WBC Count: 7200 /µL
+Platelet Count: 250000 /µL
+Hematocrit: 45%
+MCV: 88 fL
+MCH: 30 pg
+
+BLOOD CHEMISTRY
+Glucose (Fasting): 92 mg/dL
+HbA1c: 5.2%
+Creatinine: 0.9 mg/dL
+BUN: 14 mg/dL
+eGFR: 95 mL/min
+
+LIPID PROFILE
+Total Cholesterol: 170 mg/dL
+LDL Cholesterol: 90 mg/dL
+HDL Cholesterol: 55 mg/dL
+Triglycerides: 110 mg/dL
+
+LIVER FUNCTION
+AST: 22 U/L
+ALT: 25 U/L
+Total Bilirubin: 0.8 mg/dL
+
+THYROID
+TSH: 2.1 mIU/L
+Free T4: 1.2 ng/dL
+
+URINALYSIS
+Protein: Negative
+Glucose: Negative
+Blood: Negative
+
+VITALS
+Blood Pressure: 118/76 mmHg
+Heart Rate: 72 bpm
+BMI: 22.5
+"""
+    return jsonify({'sample': sample})
 
 
-if __name__ == "__main__":
-    port  = int(os.getenv("PORT", 5000))
-    debug = os.getenv("FLASK_DEBUG", "True").lower() == "true"
-    print(f"\n  MediScan AI (Groq) running at http://localhost:{port}\n")
-    app.run(host="0.0.0.0", port=port, debug=debug)
+if __name__ == '__main__':
+    os.makedirs('uploads', exist_ok=True)
+    os.makedirs('reports', exist_ok=True)
+
+    app.run(debug=True)

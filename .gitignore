@@ -1,12 +1,6 @@
-.env
 __pycache__/
 *.pyc
-*.pyo
-venv/
-.venv/
+.env
+.env.example
 uploads/
-*.egg-info/
-dist/
-build/
-.DS_Store
-*.log
+reports/
