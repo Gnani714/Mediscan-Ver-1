@@ -224,4 +224,3 @@ if __name__ == '__main__':
     print(f"🏥 MediScan running on http://localhost:{port}")
 
     app.run(host='0.0.0.0', port=port, debug=False)
-
