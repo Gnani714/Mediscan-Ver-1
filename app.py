@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, send_file
 import pdfplumber
@@ -7,7 +8,6 @@ import docx
 from werkzeug.utils import secure_filename
 from ai_engine import analyze_with_ai
 from report_generator import generate_pdf_report
-from run import run
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -206,12 +206,22 @@ BMI: 22.5
 """
     return jsonify({'sample': sample})
 
+def run_launcher():
+    try:
+        import run  # this executes run.py logic
+        print("[MediScan] run.py executed successfully ✅")
+    except Exception as e:
+        print("[MediScan] run.py failed:", e)
 
 if __name__ == '__main__':
+    run_launcher()  # 🔥 this runs run.py logic
+
     os.makedirs('uploads', exist_ok=True)
     os.makedirs('reports', exist_ok=True)
 
-    app.run(debug=True)
+    port = int(os.getenv('PORT', 5000))
 
-if __name__ == "__main__":
-    app.run()
+    print(f"🏥 MediScan running on http://localhost:{port}")
+
+    app.run(host='0.0.0.0', port=port, debug=False)
+
