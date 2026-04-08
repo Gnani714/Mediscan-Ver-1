@@ -206,21 +206,9 @@ BMI: 22.5
 """
     return jsonify({'sample': sample})
 
-def run_launcher():
-    try:
-        import run  # this executes run.py logic
-        print("[MediScan] run.py executed successfully ✅")
-    except Exception as e:
-        print("[MediScan] run.py failed:", e)
 
 if __name__ == '__main__':
-    run_launcher()  # 🔥 this runs run.py logic
-
     os.makedirs('uploads', exist_ok=True)
     os.makedirs('reports', exist_ok=True)
 
-    port = int(os.getenv('PORT', 5000))
-
-    print(f"🏥 MediScan running on http://localhost:{port}")
-
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(debug=True)
